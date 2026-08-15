@@ -2,12 +2,12 @@ const MARKET_INFO = {
   kijiji: {
     name: 'Kijiji',
     postUrl: 'https://www.kijiji.ca/',
-    note: 'Open Kijiji and choose Post Ad. Kijiji currently supports desktop listing creation.'
+    note: 'Open Kijiji and choose Post Ad. With the userscript installed, its CrossMarket panel can fill recognized visible text fields.'
   },
   facebook: {
     name: 'Facebook Marketplace',
     postUrl: 'https://www.facebook.com/marketplace/create/item',
-    note: 'Opens Facebook Marketplace’s item listing page.'
+    note: 'Opens Facebook Marketplace’s item listing page. The companion only acts when you press its Fill button.'
   },
   karrot: {
     name: 'Karrot',
@@ -17,11 +17,11 @@ const MARKET_INFO = {
   craigslist: {
     name: 'Craigslist',
     postUrl: 'https://toronto.craigslist.org/',
-    note: 'Open Toronto Craigslist and choose “post”. Final posting remains manual.'
+    note: 'Craigslist is copy-only in the companion. Open Toronto Craigslist and choose “post”.'
   }
 };
 const STATUS_LABEL = { 'not-posted':'Not posted', draft:'Draft', live:'Live', sold:'Sold', removed:'Removed' };
-let listings = [], current = null;
+let listings = [], current = null, activeListingId = '';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -35,18 +35,30 @@ function toast(msg) { const t=$('#toast'); t.textContent=msg; t.classList.add('s
 async function copy(text, label='Copied') { await navigator.clipboard.writeText(String(text ?? '')); toast(label); }
 function marketValue(key, field) { return current.markets?.[key]?.[field] || current[field] || ''; }
 
-async function refresh() { listings = await api('/api/listings'); renderRows(); }
+async function refresh() {
+  const [db, companion] = await Promise.all([api('/api/listings'), api('/api/companion')]);
+  listings = db;
+  activeListingId = companion.activeListingId || '';
+  renderRows();
+  renderActiveSummary();
+  updateActivateButton();
+}
+function renderActiveSummary() {
+  const active = listings.find(x => x.id === activeListingId);
+  $('#activeSummary').innerHTML = active ? `Greasemonkey default: <strong>${esc(active.title)}</strong>` : 'No default Greasemonkey listing selected yet.';
+}
 function renderRows() {
   const q=$('#filter').value.trim().toLowerCase();
   const filtered=listings.filter(x=>[x.title,x.category,x.location].join(' ').toLowerCase().includes(q));
   $('#listingRows').innerHTML = filtered.length ? filtered.map(x => `
-    <tr>
-      <td><strong>${esc(x.title)}</strong><br><small>${esc(x.category || '')}</small></td>
+    <tr${x.id === activeListingId ? ' class="active-row"' : ''}>
+      <td><strong>${x.id === activeListingId ? '<span aria-label="Greasemonkey default">★</span> ' : ''}${esc(x.title)}</strong><br><small>${esc(x.category || '')}</small></td>
       <td>${esc(x.price ? '$'+x.price : '')}</td>
       ${['kijiji','facebook','karrot','craigslist'].map(k=>`<td><span class="status-dot">${statusIcon(x.markets[k].status)} ${esc(STATUS_LABEL[x.markets[k].status])}</span></td>`).join('')}
-      <td><button type="button" data-edit="${x.id}">Edit</button></td>
+      <td><div class="row-actions"><button type="button" data-activate="${x.id}">${x.id === activeListingId ? 'Using in Greasemonkey' : 'Use in Greasemonkey'}</button><button type="button" data-edit="${x.id}">Edit</button></div></td>
     </tr>`).join('') : '<tr><td colspan="7">No listings yet.</td></tr>';
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editListing(b.dataset.edit));
+  document.querySelectorAll('[data-activate]').forEach(b=>b.onclick=()=>setActiveListing(b.dataset.activate));
 }
 function statusIcon(s) { return ({live:'●',sold:'✓',draft:'◐',removed:'×','not-posted':'○'})[s] || '○'; }
 
@@ -58,6 +70,7 @@ function populateEditor() {
   for (const f of ['title','price','condition','category','location','description']) $('#'+f).value=current[f] || '';
   $('#tags').value=(current.tags||[]).join(', ');
   $('#deleteBtn').hidden=!current.id;
+  updateActivateButton();
   renderPhotos(); renderMarkets();
   $('#editor').classList.remove('hidden'); $('#title').focus();
 }
@@ -78,6 +91,22 @@ async function saveMaster(ev) {
   $('#listingId').value=current.id; $('#deleteBtn').hidden=false; $('#saveMessage').textContent='Saved.';
   setTimeout(()=>$('#saveMessage').textContent='',1500); await refresh(); renderMarkets(); renderPhotos();
   return current;
+}
+async function setActiveListing(id) {
+  if (!id) {
+    if (!current?.id) await saveMaster();
+    id = current.id;
+  }
+  await api('/api/companion/active', { method:'PUT', body:JSON.stringify({ id }) });
+  activeListingId = id;
+  await refresh();
+  toast('Greasemonkey default listing selected');
+}
+function updateActivateButton() {
+  const b=$('#activateBtn');
+  if (!b) return;
+  if (!current?.id) { b.textContent='Save & use in Greasemonkey'; return; }
+  b.textContent=current.id === activeListingId ? 'Using in Greasemonkey' : 'Use in Greasemonkey';
 }
 
 function renderPhotos() {
@@ -126,6 +155,7 @@ function copyKarrotSource() {
 $('#newBtn').onclick=newListing;
 $('#filter').oninput=renderRows;
 $('#listingForm').onsubmit=saveMaster;
+$('#activateBtn').onclick=()=>setActiveListing(current?.id).catch(err=>toast(err.message));
 $('#photoInput').onchange=e=>{ addPhotos([...e.target.files]).catch(err=>toast(err.message)); e.target.value=''; };
 $('#deleteBtn').onclick=async()=>{
   if (!current.id || !confirm(`Delete “${current.title}” from this local assistant? This does not delete marketplace posts.`)) return;

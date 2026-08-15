@@ -1,20 +1,41 @@
-# MarketCross Assistant
+# CrossMarket
 
-A small **local-only Linux cross-listing assistant** for Kijiji, Facebook Marketplace, Karrot and Craigslist.
+**Write once. Post deliberately.**
 
-It deliberately does **not** log into marketplaces, scrape them, bypass CAPTCHAs, or automatically click Publish. Instead, you maintain one master listing, open the official marketplace posting pages, copy the appropriate fields, upload the same photos, then record each published URL/status.
+CrossMarket is a local, user-controlled cross-listing assistant for **Kijiji**, **Facebook Marketplace**, **Karrot**, and **Craigslist**. It lets you maintain one master listing, track where it has been posted, and use a Firefox/Greasemonkey companion to copy or fill supported listing fields.
+
+CrossMarket deliberately does **not** log into marketplaces, scrape account data, solve CAPTCHAs, or automatically publish listings. You remain in control of the final marketplace-specific choices and the Post/Publish action.
+
+## Features
+
+- One master listing per item
+- Title, price, condition, category, location, tags, and description
+- Local photo storage
+- Per-marketplace title, price, category, location, and description overrides
+- Status tracking: Not posted, Draft, Live, Sold, Removed
+- Store the published URL for each marketplace
+- Dashboard showing listing status across all four marketplaces
+- Firefox/Greasemonkey companion
+- User-triggered filling of recognized visible text fields on Kijiji, Facebook Marketplace, and Karrot
+- Copy-only workflow on Craigslist
+- Karrot helper for copying an existing Kijiji or Facebook Marketplace listing URL for Karrot's import workflow
+- No npm dependencies
+- Local-only server bound to `127.0.0.1` by default
+- No marketplace passwords, cookies, or sessions stored
 
 ## Requirements
 
 - Node.js 18 or newer
-- A modern browser (Firefox or Chromium are fine)
+- Firefox
+- Greasemonkey, if you want the browser companion
 
-No npm packages are required.
+CrossMarket has no npm package dependencies, so there is no `npm install` step.
 
-## Run
+## Install from GitHub
 
 ```bash
-cd marketcross-assistant
+git clone git@github.com:zoltan-dulac/cross-market.git
+cd cross-market
 npm start
 ```
 
@@ -24,47 +45,74 @@ Then open:
 http://127.0.0.1:3784
 ```
 
-Stop it with `Ctrl+C`.
+Stop the server with `Ctrl+C`.
 
-## Features
+## Upgrading from MarketCross Assistant
 
-- One canonical/master listing per item
-- Title, price, condition, category, location, tags and description
-- Local photo storage
-- One-click Copy Title / Price / Description for each marketplace
-- Per-marketplace overrides
-- Marketplace status tracking: Not posted, Draft, Live, Sold, Removed
-- Store the final marketplace URL
-- Karrot helper: copy a live Kijiji or Facebook URL for Karrot's supported Import Listings feature
-- Dashboard showing listing status across all four sites
-- Local-only server bound to `127.0.0.1` by default
-- No dependencies and no marketplace credentials stored
+If you have already been using the earlier MarketCross Assistant build, copy its local data directory into the new clone before starting CrossMarket:
 
-## Data
-
-Everything stays inside:
-
-```text
-data/listings.json
-data/photos/
+```bash
+cp -a ../marketcross-assistant/data/. ./data/
 ```
 
-Back up the `data/` directory if the listings matter to you.
+Your runtime data remains ignored by Git.
 
-## Suggested workflow
+## Firefox / Greasemonkey companion
 
-1. Click **New listing**.
-2. Enter the master listing and save it.
-3. Add photos.
-4. For Kijiji, click **Open Kijiji**, choose **Post Ad**, and use the Copy buttons.
-5. Paste the resulting Kijiji URL into the Kijiji card and set status to **Live**.
-6. Repeat for Facebook Marketplace and Craigslist.
-7. For Karrot, either create the listing normally or use **Copy source URL for Karrot import** after Kijiji/Facebook is live.
-8. When something sells, mark that marketplace **Sold**, then use the stored URLs to open and remove the duplicates elsewhere.
+With CrossMarket running, open this URL in Firefox:
 
-## Why it does not auto-publish
+```text
+http://127.0.0.1:3784/cross-market-companion.user.js
+```
 
-Marketplace posting interfaces and rules change, and some marketplaces restrict unapproved automated access/posting. Keeping final publication user-controlled makes this tool much less brittle and avoids building around private/internal APIs or automated login/CAPTCHA flows.
+Approve the userscript installation in Greasemonkey.
+
+The userscript runs only on supported marketplace pages and contacts only the local CrossMarket server at `127.0.0.1:3784`.
+
+### Typical workflow
+
+1. Create or edit a listing in CrossMarket.
+2. Press **Use in Greasemonkey** to make it the default listing.
+3. Open Kijiji, Facebook Marketplace, Karrot, or Craigslist in Firefox.
+4. Press the floating **CrossMarket** button.
+5. Choose a different saved listing if needed.
+6. On Kijiji, Facebook Marketplace, and Karrot, press **Fill visible fields** to populate recognized title, price, description, and location fields.
+7. Complete category, condition, photos, and marketplace-specific controls manually.
+8. Review everything and use the marketplace's own Post/Publish control yourself.
+
+Craigslist is intentionally copy-only in the userscript.
+
+## Browser companion boundaries
+
+The companion:
+
+- never stores marketplace passwords, cookies, or sessions;
+- never reads your marketplace account or existing listing data;
+- never clicks Post, Publish, Submit, or Next;
+- never solves CAPTCHAs or bypasses verification;
+- never runs unattended;
+- does not manipulate file-upload controls;
+- fills fields only after you explicitly press **Fill visible fields**;
+- leaves existing field text unchanged unless you explicitly enable replacement.
+
+Marketplace markup changes frequently. CrossMarket uses labels, ARIA labels, placeholders, names, and other semantic hints rather than depending only on generated CSS class names. If it cannot identify a field with enough confidence, it leaves the field untouched.
+
+## Local data and privacy
+
+CrossMarket stores runtime data under:
+
+```text
+data/
+  listings.json
+  settings.json
+  photos/
+```
+
+These files are ignored by Git, so your listings and uploaded photos are not accidentally committed to the repository.
+
+Back up the `data/` directory separately if the listings matter to you.
+
+The server listens on `127.0.0.1` by default, which makes it accessible only from the local computer.
 
 ## Custom port
 
@@ -72,12 +120,38 @@ Marketplace posting interfaces and rules change, and some marketplaces restrict 
 PORT=8080 npm start
 ```
 
-To expose it beyond the local computer you can change `HOST`, but that is **not recommended** unless you add authentication:
+You can change `HOST`, but exposing the application to a network is not recommended unless authentication and other appropriate security controls are added.
+
+## Development
+
+Run the syntax checks with:
 
 ```bash
-HOST=0.0.0.0 PORT=3784 npm start
+npm test
 ```
+
+Project layout:
+
+```text
+cross-market/
+├── data/
+│   └── photos/
+├── public/
+│   ├── app.js
+│   ├── cross-market-companion.user.js
+│   ├── index.html
+│   └── styles.css
+├── .gitignore
+├── LICENSE
+├── package.json
+├── README.md
+└── server.js
+```
+
+## Disclaimer
+
+CrossMarket is an independent project and is not affiliated with, endorsed by, or sponsored by Kijiji, Meta/Facebook, Karrot, or Craigslist. Marketplace interfaces and terms can change, so users are responsible for reviewing and complying with the rules of each service they use.
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).

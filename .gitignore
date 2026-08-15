@@ -1,3 +1,12 @@
+# Runtime CrossMarket data — never commit personal listing data.
 data/listings.json
+data/settings.json
 data/photos/*
 !data/photos/.gitkeep
+
+# Logs / editor / OS clutter
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -6,8 +6,10 @@ h1,h2,h3,h4,p { margin-top:0; }
 .site-header p { margin-bottom:0; }
 main { max-width:1200px; margin:auto; padding:1rem; }
 .panel { border:1px solid var(--border); border-radius:.6rem; padding:1rem; margin-bottom:1rem; }
+.companion-panel { border-width:2px; }
 .hidden { display:none; }
-.section-heading,.market-head,.button-row { display:flex; gap:.7rem; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+.section-heading,.market-head,.button-row,.row-actions { display:flex; gap:.7rem; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+.row-actions { justify-content:flex-start; }
 .grid { display:grid; gap:.8rem; }
 .grid.two { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
 label { display:grid; gap:.25rem; font-weight:600; }
@@ -15,6 +17,7 @@ input,textarea,select,button { font:inherit; }
 input,textarea,select { width:100%; padding:.55rem; border:1px solid var(--border); border-radius:.35rem; }
 textarea { resize:vertical; }
 button,a.button { padding:.55rem .8rem; border:1px solid currentColor; border-radius:.35rem; cursor:pointer; text-decoration:none; background:Canvas; color:CanvasText; }
+a.primary { border-width:2px; font-weight:700; }
 button:hover,a.button:hover { outline:2px solid currentColor; outline-offset:1px; }
 button:focus-visible,a.button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid currentColor; outline-offset:2px; }
 .danger { border-color:#b00020; }
@@ -23,12 +26,14 @@ legend { font-weight:700; padding:0 .4rem; }
 .table-wrap { overflow:auto; }
 table { width:100%; border-collapse:collapse; }
 th,td { text-align:left; padding:.6rem; border-bottom:1px solid var(--border); vertical-align:top; }
+.active-row { font-weight:500; }
+.active-summary { margin-bottom:.7rem; }
 .status-dot { white-space:nowrap; }
 .badge { border:1px solid var(--border); border-radius:999px; padding:.15rem .5rem; font-size:.9rem; }
 .markets { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1rem; }
 .market-card { border:1px solid var(--border); border-radius:.5rem; padding:1rem; }
 .market-card details { margin-top:.8rem; }
-.market-card summary { cursor:pointer; font-weight:700; }
+.market-card summary, .companion-panel summary { cursor:pointer; font-weight:700; }
 .market-fields { margin-top:.8rem; }
 .photos { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:.8rem; }
 .photo { width:150px; border:1px solid var(--border); border-radius:.4rem; padding:.4rem; }
@@ -36,6 +41,7 @@ th,td { text-align:left; padding:.6rem; border-bottom:1px solid var(--border); v
 .photo button { width:100%; margin-top:.4rem; }
 .help { max-width:75ch; }
 .status-message { min-height:1.5em; }
+code { padding:.1rem .25rem; border:1px solid var(--border); border-radius:.25rem; }
 #toast { position:fixed; right:1rem; bottom:1rem; max-width:28rem; padding:.75rem 1rem; background:CanvasText; color:Canvas; border-radius:.4rem; opacity:0; transform:translateY(8px); transition:.15s; pointer-events:none; }
 #toast.show { opacity:1; transform:none; }
 @media (max-width:700px) { .site-header { align-items:flex-start; } th:nth-child(n+3):nth-child(-n+6), td:nth-child(n+3):nth-child(-n+6) { min-width:110px; } }

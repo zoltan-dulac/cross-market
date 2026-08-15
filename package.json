@@ -1,14 +1,33 @@
 {
-  "name": "marketcross-assistant",
-  "version": "0.1.0",
+  "name": "cross-market",
+  "version": "0.2.0",
   "private": true,
-  "description": "Local, user-controlled cross-listing assistant for Kijiji, Facebook Marketplace, Karrot and Craigslist.",
+  "description": "Local, user-controlled cross-listing assistant for Kijiji, Facebook Marketplace, Karrot and Craigslist, with a Firefox/Greasemonkey companion.",
   "type": "commonjs",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --check server.js && node --check public/app.js && node --check public/cross-market-companion.user.js"
   },
   "engines": {
     "node": ">=18"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/zoltan-dulac/cross-market.git"
+  },
+  "homepage": "https://github.com/zoltan-dulac/cross-market#readme",
+  "bugs": {
+    "url": "https://github.com/zoltan-dulac/cross-market/issues"
+  },
+  "keywords": [
+    "cross-listing",
+    "marketplace",
+    "kijiji",
+    "facebook-marketplace",
+    "karrot",
+    "craigslist",
+    "greasemonkey",
+    "firefox"
+  ],
   "license": "MIT"
 }
