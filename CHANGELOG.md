@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-08-15
+
+- Opening Kijiji, Facebook Marketplace, Karrot, or Craigslist now automatically marks that marketplace as Live for the current listing.
+- The published listing URL remains blank until the user adds it manually.
+
 ## 0.2.0 - 2026-08-15
 
 - Renamed the project to CrossMarket.

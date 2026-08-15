@@ -13,6 +13,7 @@ CrossMarket deliberately does **not** log into marketplaces, scrape account data
 - Local photo storage
 - Per-marketplace title, price, category, location, and description overrides
 - Status tracking: Not posted, Draft, Live, Sold, Removed
+- Opening a marketplace posting page automatically marks that listing as Live on that marketplace
 - Store the published URL for each marketplace
 - Dashboard showing listing status across all four marketplaces
 - Firefox/Greasemonkey companion
@@ -73,7 +74,7 @@ The userscript runs only on supported marketplace pages and contacts only the lo
 
 1. Create or edit a listing in CrossMarket.
 2. Press **Use in Greasemonkey** to make it the default listing.
-3. Open Kijiji, Facebook Marketplace, Karrot, or Craigslist in Firefox.
+3. Open Kijiji, Facebook Marketplace, Karrot, or Craigslist in Firefox. CrossMarket marks that marketplace as Live when you use its Open button.
 4. Press the floating **CrossMarket** button.
 5. Choose a different saved listing if needed.
 6. On Kijiji, Facebook Marketplace, and Karrot, press **Fill visible fields** to populate recognized title, price, description, and location fields.

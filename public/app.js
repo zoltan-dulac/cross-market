@@ -129,17 +129,45 @@ function renderMarkets() {
     const node=$('#marketTemplate').content.cloneNode(true); const card=node.querySelector('.market-card'); card.dataset.market=key;
     card.querySelector('h4').textContent=info.name; const m=current.markets[key]; card.querySelector('.badge').textContent=STATUS_LABEL[m.status];
     const actions=card.querySelector('.actions');
-    actions.innerHTML=`<a class="button" href="${info.postUrl}" target="_blank" rel="noopener">Open ${esc(info.name)}</a>
+    actions.innerHTML=`<a class="button" data-open-market href="${info.postUrl}" target="_blank" rel="noopener">Open ${esc(info.name)}</a>
       <button type="button" data-copy="title">Copy title</button><button type="button" data-copy="price">Copy price</button><button type="button" data-copy="description">Copy description</button>`;
     if (key==='karrot') actions.insertAdjacentHTML('beforeend','<button type="button" data-karrot-import>Copy source URL for Karrot import</button>');
     const note=document.createElement('p'); note.className='help'; note.textContent=info.note; actions.after(note);
     for (const f of ['status','url','title','price','category','location','description']) card.querySelector('.m-'+f).value=m[f] || '';
     card.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copy(marketValue(key,b.dataset.copy),`${info.name}: ${b.dataset.copy} copied`));
+    card.querySelector('[data-open-market]').onclick=()=>markMarketplaceLive(key,card);
     card.querySelector('.save-market').onclick=()=>saveMarket(key,card);
     const ki=card.querySelector('[data-karrot-import]'); if (ki) ki.onclick=()=>copyKarrotSource();
     host.appendChild(node);
   }
 }
+async function markMarketplaceLive(key, card) {
+  const m=current.markets[key];
+  const previousStatus=m.status;
+
+  // The link itself opens normally in a new tab. Mark the marketplace Live
+  // immediately, then persist the change without delaying or blocking that tab.
+  m.status='live';
+  card.querySelector('.m-status').value='live';
+  card.querySelector('.badge').textContent=STATUS_LABEL.live;
+
+  try {
+    if (!current.id) {
+      await saveMaster();
+    } else {
+      current=await api('/api/listings/'+current.id,{method:'PUT',body:JSON.stringify(collectMaster())});
+      await refresh();
+      renderMarkets();
+    }
+    toast(`${MARKET_INFO[key].name} marked Live`);
+  } catch (err) {
+    m.status=previousStatus;
+    card.querySelector('.m-status').value=previousStatus;
+    card.querySelector('.badge').textContent=STATUS_LABEL[previousStatus];
+    toast(`Could not update status: ${err.message}`);
+  }
+}
+
 async function saveMarket(key, card) {
   const m=current.markets[key];
   for (const f of ['status','url','title','price','category','location','description']) m[f]=card.querySelector('.m-'+f).value.trim();

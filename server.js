@@ -116,7 +116,7 @@ function companionPayload(market) {
   const settings = readSettings();
   const validMarket = MARKET_KEYS.includes(market) ? market : null;
   return {
-    version: '0.2.0',
+    version: '0.2.1',
     activeListingId: settings.activeListingId || '',
     listings: db.map(x => ({
       id: x.id,
