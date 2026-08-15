@@ -1,0 +1,3 @@
+data/listings.json
+data/photos/*
+!data/photos/.gitkeep

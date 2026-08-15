@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MarketCross Assistant</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div>
+    <h1>MarketCross Assistant</h1>
+    <p>Write once. Post deliberately.</p>
+  </div>
+  <button id="newBtn" type="button">New listing</button>
+</header>
+
+<main>
+  <section class="panel" aria-labelledby="dashboardHeading">
+    <div class="section-heading">
+      <h2 id="dashboardHeading">Listings</h2>
+      <label>Filter <input id="filter" type="search" placeholder="Title, category, location"></label>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>Price</th><th>Kijiji</th><th>Facebook</th><th>Karrot</th><th>Craigslist</th><th></th></tr></thead>
+        <tbody id="listingRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="editor" class="panel hidden" aria-labelledby="editorHeading">
+    <div class="section-heading">
+      <h2 id="editorHeading">Listing</h2>
+      <div class="button-row"><button id="deleteBtn" class="danger" type="button">Delete listing</button></div>
+    </div>
+
+    <form id="listingForm">
+      <input id="listingId" type="hidden">
+      <fieldset>
+        <legend>Master listing</legend>
+        <div class="grid two">
+          <label>Title <input id="title" required></label>
+          <label>Price <input id="price" inputmode="decimal" placeholder="75"></label>
+          <label>Condition <input id="condition" placeholder="Good"></label>
+          <label>Category <input id="category" placeholder="Electronics"></label>
+          <label>Location <input id="location" placeholder="Toronto, ON"></label>
+          <label>Tags <input id="tags" placeholder="VCR, VHS, Sony"></label>
+        </div>
+        <label>Description <textarea id="description" rows="8"></textarea></label>
+        <div class="button-row"><button type="submit">Save listing</button><span id="saveMessage" class="status-message" aria-live="polite"></span></div>
+      </fieldset>
+    </form>
+
+    <fieldset id="photosFieldset">
+      <legend>Photos</legend>
+      <p class="help">Photos stay on this computer. Add them once, then choose the same files when each marketplace asks for uploads.</p>
+      <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+      <div id="photos" class="photos"></div>
+    </fieldset>
+
+    <section aria-labelledby="marketHeading">
+      <h3 id="marketHeading">Marketplace posting</h3>
+      <p class="help">Open the official posting page, copy the fields you need, review the listing there, and publish using the marketplace's own controls.</p>
+      <div id="markets" class="markets"></div>
+    </section>
+  </section>
+</main>
+
+<template id="marketTemplate">
+  <article class="market-card">
+    <div class="market-head"><h4></h4><span class="badge"></span></div>
+    <div class="button-row actions"></div>
+    <details>
+      <summary>Overrides and status</summary>
+      <div class="grid two market-fields">
+        <label>Status
+          <select class="m-status">
+            <option value="not-posted">Not posted</option><option value="draft">Draft</option><option value="live">Live</option><option value="sold">Sold</option><option value="removed">Removed</option>
+          </select>
+        </label>
+        <label>Listing URL <input class="m-url" type="url" placeholder="Paste the published listing URL"></label>
+        <label>Title override <input class="m-title" placeholder="Leave blank to use master title"></label>
+        <label>Price override <input class="m-price" placeholder="Leave blank to use master price"></label>
+        <label>Category override <input class="m-category" placeholder="Marketplace-specific category"></label>
+        <label>Location override <input class="m-location" placeholder="Leave blank to use master location"></label>
+      </div>
+      <label>Description override <textarea class="m-description" rows="5" placeholder="Leave blank to use master description"></textarea></label>
+      <button class="save-market" type="button">Save marketplace details</button>
+    </details>
+  </article>
+</template>
+
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="/app.js"></script>
+</body>
+</html>
