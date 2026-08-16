@@ -1,14 +1,30 @@
-:root { font-family: system-ui, sans-serif; color-scheme: light dark; --border:#777; --space:1rem; }
+:root { font-family: system-ui, sans-serif; color-scheme: light dark; --border:#777; --space:1rem; --header-height:3.5rem; }
 * { box-sizing:border-box; }
+html { scroll-padding-top:calc(var(--header-height) + 1rem); }
 body { margin:0; line-height:1.45; }
-.site-header { display:flex; justify-content:space-between; gap:1rem; align-items:center; padding:1rem max(1rem, calc((100vw - 1200px)/2)); border-bottom:1px solid var(--border); }
+.site-header {
+  position:sticky;
+  top:0;
+  z-index:100;
+  min-height:var(--header-height);
+  display:flex;
+  justify-content:space-between;
+  gap:1rem;
+  align-items:center;
+  padding:.45rem max(1rem, calc((100vw - 1200px)/2));
+  border-bottom:1px solid var(--border);
+  background:Canvas;
+  color:CanvasText;
+}
+.site-header h1 { margin:0; font-size:1.2rem; line-height:1.2; }
+.header-actions { display:flex; gap:.55rem; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
 h1,h2,h3,h4,p { margin-top:0; }
-.site-header p { margin-bottom:0; }
 main { max-width:1200px; margin:auto; padding:1rem; }
 .panel { border:1px solid var(--border); border-radius:.6rem; padding:1rem; margin-bottom:1rem; }
-.companion-panel { border-width:2px; }
 .hidden { display:none; }
 .section-heading,.market-head,.button-row,.row-actions { display:flex; gap:.7rem; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+.listings-heading h2 { margin-bottom:0; }
+.listings-heading label { grid-template-columns:auto minmax(14rem,24rem); align-items:center; }
 .row-actions { justify-content:flex-start; }
 .grid { display:grid; gap:.8rem; }
 .grid.two { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
@@ -31,7 +47,7 @@ th,td { text-align:left; padding:.6rem; border-bottom:1px solid var(--border); v
 .muted,.optional { opacity:.75; font-weight:400; }
 .sale-summary { margin-bottom:.8rem; }
 .sale-actions { justify-content:flex-start; margin-top:.8rem; }
-.active-summary { margin-bottom:.7rem; }
+.active-summary { margin:.8rem 0; }
 .status-dot { white-space:nowrap; }
 .badge { border:1px solid var(--border); border-radius:999px; padding:.15rem .5rem; font-size:.9rem; }
 .markets { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1rem; }
@@ -40,7 +56,7 @@ th,td { text-align:left; padding:.6rem; border-bottom:1px solid var(--border); v
 .ad-url-box { margin-top:.9rem; padding:.75rem; border:1px solid var(--border); border-radius:.45rem; }
 .ad-url-actions { justify-content:flex-start; margin-top:.55rem; }
 .ad-url-help { margin:.55rem 0 0; font-size:.9rem; }
-.market-card summary, .companion-panel summary { cursor:pointer; font-weight:700; }
+.market-card summary { cursor:pointer; font-weight:700; }
 .market-fields { margin-top:.8rem; }
 .photos { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:.8rem; }
 .photo { width:150px; border:1px solid var(--border); border-radius:.4rem; padding:.4rem; }
@@ -49,6 +65,26 @@ th,td { text-align:left; padding:.6rem; border-bottom:1px solid var(--border); v
 .help { max-width:75ch; }
 .status-message { min-height:1.5em; }
 code { padding:.1rem .25rem; border:1px solid var(--border); border-radius:.25rem; }
+
+/* CrossMarket skin for the Enable tabs component. Enable supplies the behavior;
+   these rules keep the tab strip visually consistent with the rest of the app. */
+.listing-tabs { margin-top:.4rem; }
+.enable-tablist { display:flex; gap:.2rem; list-style:none; margin:0; padding:0; border-bottom:1px solid var(--border); }
+.enable-tablist li { margin:0 0 -1px; padding:0; }
+.enable-tablist a { display:block; padding:.55rem .9rem; border:1px solid transparent; border-bottom-color:var(--border); border-radius:.4rem .4rem 0 0; color:CanvasText; text-decoration:none; font-weight:700; }
+.enable-tablist [aria-selected="true"] a,
+.enable-tablist a[aria-selected="true"] { border-color:var(--border); border-bottom-color:Canvas; background:Canvas; }
+.enable-tablist [role="tab"]:focus-visible,
+.enable-tablist a:focus-visible { outline:3px solid currentColor; outline-offset:2px; }
+.listing-tabpanel { padding-top:.75rem; }
+
 #toast { position:fixed; right:1rem; bottom:1rem; max-width:28rem; padding:.75rem 1rem; background:CanvasText; color:Canvas; border-radius:.4rem; opacity:0; transform:translateY(8px); transition:.15s; pointer-events:none; }
 #toast.show { opacity:1; transform:none; }
-@media (max-width:700px) { .site-header { align-items:flex-start; } th:nth-child(n+3):nth-child(-n+6), td:nth-child(n+3):nth-child(-n+6) { min-width:110px; } }
+@media (max-width:700px) {
+  :root { --header-height:5.6rem; }
+  .site-header { align-items:flex-start; }
+  .header-actions { max-width:75%; }
+  .listings-heading { align-items:flex-start; }
+  .listings-heading label { width:100%; grid-template-columns:1fr; }
+  th:nth-child(n+3):nth-child(-n+6), td:nth-child(n+3):nth-child(-n+6) { min-width:110px; }
+}

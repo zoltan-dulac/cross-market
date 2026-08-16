@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1 - 2026-08-16
+
+- Fixed Enable tabs.js integration. Copied Enable files locally.
+
+## 0.4.0 - 2026-08-16
+
+- Made the CrossMarket header compact and sticky at the top of the viewport.
+- Moved the two primary actions into the header: **New Listing** and **Install Greasemonkey userscript**.
+- Removed the previous header tagline and the large Greasemonkey companion introduction panel.
+- Split the Listings dashboard into accessible **On Sale** and **Sold** tabs using the Enable `enable-a11y` tabs component.
+- Kept filtering shared across both listing tabs and retained sale details in the Sold view.
+
 ## 0.3.2 - 2026-08-16
 
 - Promoted each marketplace’s optional **Ad URL** field into the main marketplace card, with dedicated **Save URL** and **Open saved ad** controls.

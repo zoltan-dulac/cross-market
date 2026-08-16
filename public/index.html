@@ -4,51 +4,49 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CrossMarket</title>
+  <link rel="stylesheet" href="/enable/tabs.css">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <header class="site-header">
-  <div>
-    <h1>CrossMarket</h1>
-    <p>Write once. Post deliberately.</p>
+  <h1>CrossMarket</h1>
+  <div class="header-actions">
+    <button id="newBtn" type="button">New Listing</button>
+    <a class="button primary" href="/cross-market-companion.user.js">Install Greasemonkey userscript</a>
   </div>
-  <button id="newBtn" type="button">New listing</button>
 </header>
 
 <main>
-  <section class="panel companion-panel" aria-labelledby="companionHeading">
-    <div class="section-heading">
-      <div>
-        <h2 id="companionHeading">Firefox / Greasemonkey companion</h2>
-        <p class="help">Install the companion userscript once. On a supported marketplace, click its <strong>CrossMarket</strong> button to choose a local listing, copy fields, or fill supported visible text fields. On <strong>Google Photos</strong>, the same companion can copy the currently displayed photo into the selected CrossMarket listing.</p>
-      </div>
-      <a class="button primary" href="/cross-market-companion.user.js">Install Greasemonkey userscript</a>
-    </div>
-    <details>
-      <summary>How to install and use it</summary>
-      <ol>
-        <li>Make sure Greasemonkey is installed and enabled in Firefox.</li>
-        <li>Open <strong>Install Greasemonkey userscript</strong> above and approve the script in Greasemonkey.</li>
-        <li>Choose a listing here and press <strong>Use in Greasemonkey</strong>. This becomes the default listing in the userscript.</li>
-        <li>Open Kijiji, Facebook Marketplace, Karrot, or Craigslist. A <strong>CrossMarket</strong> button appears at the lower-right.</li>
-        <li>For Kijiji, Facebook Marketplace, and Karrot, <strong>Fill visible fields</strong> fills only recognized text fields. Category, condition, photos, and publication remain manual.</li>
-        <li>Craigslist is deliberately copy-only.</li>
-      </ol>
-      <p class="help">The userscript connects only to <code>http://127.0.0.1:3784</code>. It never receives or stores your marketplace passwords, cookies, or login sessions, and it never presses a site's Post/Publish/Submit button.</p>
-    </details>
-  </section>
-
-  <section class="panel" aria-labelledby="dashboardHeading">
-    <div class="section-heading">
+  <section class="panel listings-panel" aria-labelledby="dashboardHeading">
+    <div class="section-heading listings-heading">
       <h2 id="dashboardHeading">Listings</h2>
       <label>Filter <input id="filter" type="search" placeholder="Title, category, location"></label>
     </div>
     <p id="activeSummary" class="active-summary" aria-live="polite"></p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Item</th><th>Price</th><th>Sale</th><th>Kijiji</th><th>Facebook</th><th>Karrot</th><th>Craigslist</th><th>Actions</th></tr></thead>
-        <tbody id="listingRows"></tbody>
-      </table>
+
+    <div class="listing-tabs">
+      <ul class="enable-tablist">
+        <li><a class="enable-tab" href="#onSalePanel" data-owns="onSalePanel">On Sale</a></li>
+        <li><a class="enable-tab" href="#soldPanel" data-owns="soldPanel">Sold</a></li>
+      </ul>
+
+      <div id="onSalePanel" class="listing-tabpanel enable-tabpanel" tabindex="-1">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Item</th><th>Price</th><th>Kijiji</th><th>Facebook</th><th>Karrot</th><th>Craigslist</th><th>Actions</th></tr></thead>
+            <tbody id="onSaleRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="soldPanel" class="listing-tabpanel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Item</th><th>Price</th><th>Sale</th><th>Kijiji</th><th>Facebook</th><th>Karrot</th><th>Craigslist</th><th>Actions</th></tr></thead>
+            <tbody id="soldRows"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -156,5 +154,9 @@
 
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <script src="/app.js"></script>
+<script type="module">
+  import tabs from "./enable/tabs.js";
+  tabs.init();
+</script>
 </body>
 </html>

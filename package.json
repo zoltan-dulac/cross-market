@@ -1,6 +1,6 @@
 {
   "name": "cross-market",
-  "version": "0.3.2",
+  "version": "0.4.1",
   "private": true,
   "description": "Local, user-controlled cross-listing assistant for Kijiji, Facebook Marketplace, Karrot and Craigslist, with a Firefox/Greasemonkey companion.",
   "type": "commonjs",

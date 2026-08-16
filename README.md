@@ -4,6 +4,8 @@
 
 CrossMarket is a local, user-controlled cross-listing assistant for **Kijiji**, **Facebook Marketplace**, **Karrot**, and **Craigslist**. It lets you maintain one master listing, track where it has been posted, and use a Firefox/Greasemonkey companion to copy or fill supported listing fields.
 
+The dashboard separates active inventory into **On Sale** and **Sold** tabs. The tab interface uses the open-source [Enable](https://www.useragentman.com/enable/tabs.php) tabs component.
+
 CrossMarket deliberately does **not** log into marketplaces, scrape account data, solve CAPTCHAs, or automatically publish listings. You remain in control of the final marketplace-specific choices and the Post/Publish action.
 
 ## Features
@@ -35,6 +37,7 @@ CrossMarket deliberately does **not** log into marketplaces, scrape account data
 - Greasemonkey, if you want the browser companion
 
 CrossMarket has no npm package dependencies, so there is no `npm install` step.
+The Listings tabs load Enable 2.0.0 browser assets from jsDelivr; this keeps Enable out of CrossMarket’s npm dependency tree.
 
 ## Install from GitHub
 

@@ -1,7 +1,7 @@
 const MARKET_INFO = {
   kijiji: {
     name: 'Kijiji',
-    postUrl: 'https://www.kijiji.ca/',
+    postUrl: 'https://www.kijiji.ca/p-select-category.html',
     note: 'Open Kijiji and choose Post Ad. With the userscript installed, its CrossMarket panel can fill recognized visible text fields.'
   },
   facebook: {
@@ -16,7 +16,7 @@ const MARKET_INFO = {
   },
   craigslist: {
     name: 'Craigslist',
-    postUrl: 'https://toronto.craigslist.org/',
+    postUrl: 'https://www.craigslist.org/post/tor',
     note: 'Craigslist is copy-only in the companion. Open Toronto Craigslist and choose “post”.'
   }
 };
@@ -62,22 +62,36 @@ function renderActiveSummary() {
   const active = listings.find(x => x.id === activeListingId);
   $('#activeSummary').innerHTML = active ? `Greasemonkey default: <strong>${esc(active.title)}</strong>` : 'No default Greasemonkey listing selected yet.';
 }
-function renderRows() {
-  const q=$('#filter').value.trim().toLowerCase();
-  const filtered=listings.filter(x=>[x.title,x.category,x.location,x.sale?.buyerName,x.sale?.buyerEmail,salePlatformName(x.sale?.platform)].join(' ').toLowerCase().includes(q));
-  $('#listingRows').innerHTML = filtered.length ? filtered.map(x => {
-    const classes=[];
-    if (x.id === activeListingId) classes.push('active-row');
-    if (x.sale?.soldAt) classes.push('sold-row');
-    return `
+function listingMatchesFilter(x, q) {
+  return [x.title,x.category,x.location,x.sale?.buyerName,x.sale?.buyerEmail,salePlatformName(x.sale?.platform)]
+    .join(' ').toLowerCase().includes(q);
+}
+function listingRow(x, includeSale=false) {
+  const classes=[];
+  if (x.id === activeListingId) classes.push('active-row');
+  if (x.sale?.soldAt) classes.push('sold-row');
+  return `
     <tr${classes.length ? ` class="${classes.join(' ')}"` : ''}>
       <td><strong>${x.id === activeListingId ? '<span aria-label="Greasemonkey default">★</span> ' : ''}${esc(x.title)}</strong><br><small>${esc(x.category || '')}</small></td>
       <td>${esc(x.price ? '$'+x.price : '')}</td>
-      <td>${saleRowSummary(x)}</td>
+      ${includeSale ? `<td>${saleRowSummary(x)}</td>` : ''}
       ${['kijiji','facebook','karrot','craigslist'].map(k=>`<td><span class="status-dot">${statusIcon(x.markets?.[k]?.status)} ${esc(STATUS_LABEL[x.markets?.[k]?.status] || 'Not posted')}</span></td>`).join('')}
       <td><div class="row-actions"><button type="button" data-activate="${x.id}">${x.id === activeListingId ? 'Using in Greasemonkey' : 'Use in Greasemonkey'}</button><button type="button" data-edit="${x.id}">Edit</button></div></td>
     </tr>`;
-  }).join('') : '<tr><td colspan="8">No listings yet.</td></tr>';
+}
+function renderRows() {
+  const q=$('#filter').value.trim().toLowerCase();
+  const matched=listings.filter(x=>listingMatchesFilter(x,q));
+  const onSale=matched.filter(x=>!x.sale?.soldAt);
+  const sold=matched.filter(x=>Boolean(x.sale?.soldAt));
+
+  $('#onSaleRows').innerHTML=onSale.length
+    ? onSale.map(x=>listingRow(x,false)).join('')
+    : `<tr><td colspan="7">${q ? 'No matching on-sale listings.' : 'No listings currently on sale.'}</td></tr>`;
+  $('#soldRows').innerHTML=sold.length
+    ? sold.map(x=>listingRow(x,true)).join('')
+    : `<tr><td colspan="8">${q ? 'No matching sold listings.' : 'No sold listings yet.'}</td></tr>`;
+
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editListing(b.dataset.edit));
   document.querySelectorAll('[data-activate]').forEach(b=>b.onclick=()=>setActiveListing(b.dataset.activate));
 }
