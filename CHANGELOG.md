@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-08-15
+
+- Added Google Photos support to the Firefox/Greasemonkey companion.
+- When a single photo is open in Google Photos, **Add current photo to listing** copies the displayed image into the selected CrossMarket listing and stores it under `data/photos/`.
+- Google Photos uses the same active-listing selector as the marketplace companion.
+- Still images only; videos are detected and left untouched.
+- Increased the local JSON request limit to accommodate larger image transfers.
+
 ## 0.2.1 - 2026-08-15
 
 - Opening Kijiji, Facebook Marketplace, Karrot, or Craigslist now automatically marks that marketplace as Live for the current listing.

@@ -20,7 +20,7 @@
     <div class="section-heading">
       <div>
         <h2 id="companionHeading">Firefox / Greasemonkey companion</h2>
-        <p class="help">Install the companion userscript once. On a supported marketplace, click its <strong>CrossMarket</strong> button to choose a local listing, copy fields, or fill supported visible text fields.</p>
+        <p class="help">Install the companion userscript once. On a supported marketplace, click its <strong>CrossMarket</strong> button to choose a local listing, copy fields, or fill supported visible text fields. On <strong>Google Photos</strong>, the same companion can copy the currently displayed photo into the selected CrossMarket listing.</p>
       </div>
       <a class="button primary" href="/cross-market-companion.user.js">Install Greasemonkey userscript</a>
     </div>
@@ -80,7 +80,7 @@
 
     <fieldset id="photosFieldset">
       <legend>Photos</legend>
-      <p class="help">Photos stay on this computer. Add them once, then choose the same files when each marketplace asks for uploads. The Greasemonkey script deliberately does not manipulate file-upload controls.</p>
+      <p class="help">Photos stored by CrossMarket stay on this computer. You can upload local files here or use the Greasemonkey companion on Google Photos to copy the currently displayed photo into this listing. Marketplace file-upload controls remain manual.</p>
       <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
       <div id="photos" class="photos"></div>
     </fieldset>

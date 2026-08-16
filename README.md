@@ -17,6 +17,7 @@ CrossMarket deliberately does **not** log into marketplaces, scrape account data
 - Store the published URL for each marketplace
 - Dashboard showing listing status across all four marketplaces
 - Firefox/Greasemonkey companion
+- Import the currently displayed photo from Google Photos into the active local listing
 - User-triggered filling of recognized visible text fields on Kijiji, Facebook Marketplace, and Karrot
 - Copy-only workflow on Craigslist
 - Karrot helper for copying an existing Kijiji or Facebook Marketplace listing URL for Karrot's import workflow
@@ -68,7 +69,7 @@ http://127.0.0.1:3784/cross-market-companion.user.js
 
 Approve the userscript installation in Greasemonkey.
 
-The userscript runs only on supported marketplace pages and contacts only the local CrossMarket server at `127.0.0.1:3784`.
+The userscript runs on the supported marketplace pages and on `photos.google.com`. It contacts the local CrossMarket server at `127.0.0.1:3784`; when you explicitly import a Google Photos image, it also reads that currently displayed image so it can make a local copy.
 
 ### Typical workflow
 
@@ -83,6 +84,19 @@ The userscript runs only on supported marketplace pages and contacts only the lo
 
 Craigslist is intentionally copy-only in the userscript.
 
+
+### Importing from Google Photos
+
+1. In CrossMarket, choose the listing you are working on and press **Use in Greasemonkey**.
+2. In Firefox, open `https://photos.google.com/` and open a single photo.
+3. Press the floating **CrossMarket** button.
+4. Confirm the intended listing in the selector.
+5. Press **Add current photo to listing**.
+6. CrossMarket reads the currently displayed photo and stores a local copy under `data/photos/`.
+7. Move to the next Google Photos image and repeat as needed.
+
+The import is user-triggered and handles still images only. It copies the image currently being displayed by Google Photos; it does not use Google's private APIs or automatically browse your library. The displayed image may be a web-sized rendition rather than the camera's untouched original file.
+
 ## Browser companion boundaries
 
 The companion:
@@ -92,7 +106,8 @@ The companion:
 - never clicks Post, Publish, Submit, or Next;
 - never solves CAPTCHAs or bypasses verification;
 - never runs unattended;
-- does not manipulate file-upload controls;
+- does not manipulate marketplace file-upload controls;
+- reads a Google Photos image only after you explicitly press **Add current photo to listing**;
 - fills fields only after you explicitly press **Fill visible fields**;
 - leaves existing field text unchanged unless you explicitly enable replacement.
 

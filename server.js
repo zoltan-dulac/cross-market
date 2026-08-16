@@ -12,6 +12,7 @@ const DATA_DIR = path.join(ROOT, 'data');
 const PHOTOS_DIR = path.join(DATA_DIR, 'photos');
 const DB_FILE = path.join(DATA_DIR, 'listings.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const VERSION = '0.3.0';
 
 fs.mkdirSync(PHOTOS_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, '[]\n');
@@ -51,7 +52,7 @@ function bodyJSON(req) {
     let data = '';
     req.on('data', chunk => {
       data += chunk;
-      if (data.length > 25 * 1024 * 1024) reject(new Error('Request too large'));
+      if (data.length > 60 * 1024 * 1024) reject(new Error('Request too large'));
     });
     req.on('end', () => {
       try { resolve(data ? JSON.parse(data) : {}); }
@@ -111,19 +112,36 @@ function resolveForMarket(listing, key) {
     importSourceUrl: key === 'karrot' ? (listing.markets?.kijiji?.url || listing.markets?.facebook?.url || '') : ''
   };
 }
+function resolveForGooglePhotos(listing) {
+  return {
+    id: listing.id,
+    market: 'googlephotos',
+    title: String(listing.title || ''),
+    price: String(listing.price || ''),
+    description: String(listing.description || ''),
+    category: String(listing.category || ''),
+    location: String(listing.location || ''),
+    condition: String(listing.condition || ''),
+    tags: listing.tags || [],
+    photos: (listing.photos || []).map(p => ({ name: p.name, file: p.file })),
+    status: '',
+    url: '',
+    importSourceUrl: ''
+  };
+}
 function companionPayload(market) {
   const db = readDB();
   const settings = readSettings();
-  const validMarket = MARKET_KEYS.includes(market) ? market : null;
+  const validMarket = MARKET_KEYS.includes(market) ? market : (market === 'googlephotos' ? 'googlephotos' : null);
   return {
-    version: '0.2.1',
+    version: VERSION,
     activeListingId: settings.activeListingId || '',
     listings: db.map(x => ({
       id: x.id,
       title: x.title,
       price: x.price,
       updatedAt: x.updatedAt,
-      resolved: validMarket ? resolveForMarket(x, validMarket) : undefined
+      resolved: validMarket === 'googlephotos' ? resolveForGooglePhotos(x) : (validMarket ? resolveForMarket(x, validMarket) : undefined)
     }))
   };
 }
@@ -203,8 +221,10 @@ const server = http.createServer(async (req, res) => {
       const match = String(body.dataUrl || '').match(/^data:(image\/(?:jpeg|png|webp|gif));base64,(.+)$/);
       if (!match) return json(res, 400, { error: 'Only JPEG, PNG, WEBP and GIF photos are supported' });
       const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' }[match[1]];
+      const photoBytes = Buffer.from(match[2], 'base64');
+      if (photoBytes.length > 40 * 1024 * 1024) return json(res, 413, { error: 'Photos larger than 40 MB are not supported' });
       const filename = `${slugify(db[i].title)}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}${ext}`;
-      fs.writeFileSync(path.join(PHOTOS_DIR, filename), Buffer.from(match[2], 'base64'));
+      fs.writeFileSync(path.join(PHOTOS_DIR, filename), photoBytes);
       const photo = { file: filename, name: String(body.name || filename), url: `/photos/${filename}` };
       db[i].photos.push(photo); db[i].updatedAt = new Date().toISOString(); writeDB(db);
       return json(res, 201, photo);
