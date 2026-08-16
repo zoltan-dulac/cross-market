@@ -37,7 +37,7 @@ CrossMarket deliberately does **not** log into marketplaces, scrape account data
 - Greasemonkey, if you want the browser companion
 
 CrossMarket has no npm package dependencies, so there is no `npm install` step.
-The Listings tabs load Enable 2.0.0 browser assets from jsDelivr; this keeps Enable out of CrossMarket’s npm dependency tree.
+The Listings tabs use a local copy of the Enable tabs component under `public/enable/`, so CrossMarket does not require a CDN connection or npm dependency.
 
 ## Install from GitHub
 

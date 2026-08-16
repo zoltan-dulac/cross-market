@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js && node --check public/app.js && node --check public/cross-market-companion.user.js"
+    "test": "node --check server.js && node --check public/app.js && node --check public/cross-market-companion.user.js && node --input-type=module --check < public/enable/tabs.js && node --input-type=module --check < public/enable/accessibility.module.js"
   },
   "engines": {
     "node": ">=18"
