@@ -46,7 +46,7 @@
     <p id="activeSummary" class="active-summary" aria-live="polite"></p>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Item</th><th>Price</th><th>Kijiji</th><th>Facebook</th><th>Karrot</th><th>Craigslist</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Item</th><th>Price</th><th>Sale</th><th>Kijiji</th><th>Facebook</th><th>Karrot</th><th>Craigslist</th><th>Actions</th></tr></thead>
         <tbody id="listingRows"></tbody>
       </table>
     </div>
@@ -56,6 +56,7 @@
     <div class="section-heading">
       <h2 id="editorHeading">Listing</h2>
       <div class="button-row">
+        <button id="soldShortcutBtn" type="button">Mark as sold</button>
         <button id="activateBtn" type="button">Use in Greasemonkey</button>
         <button id="deleteBtn" class="danger" type="button">Delete listing</button>
       </div>
@@ -77,6 +78,33 @@
         <div class="button-row"><button type="submit">Save listing</button><span id="saveMessage" class="status-message" aria-live="polite"></span></div>
       </fieldset>
     </form>
+
+    <fieldset id="saleFieldset">
+      <legend>Sale</legend>
+      <p id="saleSummary" class="sale-summary" aria-live="polite"></p>
+      <form id="saleForm">
+        <div class="grid two">
+          <label>Sold date <input id="soldAt" type="date" required></label>
+          <label>Platform
+            <select id="soldPlatform" required>
+              <option value="">Choose a platform</option>
+              <option value="kijiji">Kijiji</option>
+              <option value="facebook">Facebook Marketplace</option>
+              <option value="karrot">Karrot</option>
+              <option value="craigslist">Craigslist</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label>Buyer name <input id="buyerName" required autocomplete="name" placeholder="Who bought it?"></label>
+          <label>Buyer email <span class="optional">(optional)</span> <input id="buyerEmail" type="email" autocomplete="email" placeholder="buyer@example.com"></label>
+        </div>
+        <div class="button-row sale-actions">
+          <button id="markSoldBtn" type="submit">Mark as sold</button>
+          <button id="clearSaleBtn" type="button" hidden>Clear sale record</button>
+        </div>
+      </form>
+      <p class="help">Marking an item sold records these details and changes the selected marketplace status to <strong>Sold</strong>. Other marketplace statuses are left unchanged so you can see which live ads may still need to be removed.</p>
+    </fieldset>
 
     <fieldset id="photosFieldset">
       <legend>Photos</legend>

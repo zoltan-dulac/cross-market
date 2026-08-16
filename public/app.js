@@ -21,6 +21,7 @@ const MARKET_INFO = {
   }
 };
 const STATUS_LABEL = { 'not-posted':'Not posted', draft:'Draft', live:'Live', sold:'Sold', removed:'Removed' };
+const SALE_PLATFORM_LABEL = { kijiji:'Kijiji', facebook:'Facebook Marketplace', karrot:'Karrot', craigslist:'Craigslist', other:'Other' };
 let listings = [], current = null, activeListingId = '';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -34,6 +35,20 @@ async function api(url, options={}) {
 function toast(msg) { const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toast.timer); toast.timer=setTimeout(()=>t.classList.remove('show'),1800); }
 async function copy(text, label='Copied') { await navigator.clipboard.writeText(String(text ?? '')); toast(label); }
 function marketValue(key, field) { return current.markets?.[key]?.[field] || current[field] || ''; }
+function todayLocal() {
+  const d=new Date();
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function emptySale() { return { soldAt:'', platform:'', buyerName:'', buyerEmail:'', previousPlatformStatus:'' }; }
+function normalizeSale(sale) { return { ...emptySale(), ...(sale || {}) }; }
+function salePlatformName(key) { return SALE_PLATFORM_LABEL[key] || key || ''; }
+function saleRowSummary(x) {
+  const sale=normalizeSale(x.sale);
+  if (!sale.soldAt) return '<span class="muted">Not sold</span>';
+  const buyer=sale.buyerName ? `<br><small>to ${esc(sale.buyerName)}</small>` : '';
+  return `<strong>Sold ${esc(sale.soldAt)}</strong><br><small>${esc(salePlatformName(sale.platform))}</small>${buyer}`;
+}
 
 async function refresh() {
   const [db, companion] = await Promise.all([api('/api/listings'), api('/api/companion')]);
@@ -49,21 +64,27 @@ function renderActiveSummary() {
 }
 function renderRows() {
   const q=$('#filter').value.trim().toLowerCase();
-  const filtered=listings.filter(x=>[x.title,x.category,x.location].join(' ').toLowerCase().includes(q));
-  $('#listingRows').innerHTML = filtered.length ? filtered.map(x => `
-    <tr${x.id === activeListingId ? ' class="active-row"' : ''}>
+  const filtered=listings.filter(x=>[x.title,x.category,x.location,x.sale?.buyerName,x.sale?.buyerEmail,salePlatformName(x.sale?.platform)].join(' ').toLowerCase().includes(q));
+  $('#listingRows').innerHTML = filtered.length ? filtered.map(x => {
+    const classes=[];
+    if (x.id === activeListingId) classes.push('active-row');
+    if (x.sale?.soldAt) classes.push('sold-row');
+    return `
+    <tr${classes.length ? ` class="${classes.join(' ')}"` : ''}>
       <td><strong>${x.id === activeListingId ? '<span aria-label="Greasemonkey default">★</span> ' : ''}${esc(x.title)}</strong><br><small>${esc(x.category || '')}</small></td>
       <td>${esc(x.price ? '$'+x.price : '')}</td>
-      ${['kijiji','facebook','karrot','craigslist'].map(k=>`<td><span class="status-dot">${statusIcon(x.markets[k].status)} ${esc(STATUS_LABEL[x.markets[k].status])}</span></td>`).join('')}
+      <td>${saleRowSummary(x)}</td>
+      ${['kijiji','facebook','karrot','craigslist'].map(k=>`<td><span class="status-dot">${statusIcon(x.markets?.[k]?.status)} ${esc(STATUS_LABEL[x.markets?.[k]?.status] || 'Not posted')}</span></td>`).join('')}
       <td><div class="row-actions"><button type="button" data-activate="${x.id}">${x.id === activeListingId ? 'Using in Greasemonkey' : 'Use in Greasemonkey'}</button><button type="button" data-edit="${x.id}">Edit</button></div></td>
-    </tr>`).join('') : '<tr><td colspan="7">No listings yet.</td></tr>';
+    </tr>`;
+  }).join('') : '<tr><td colspan="8">No listings yet.</td></tr>';
   document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editListing(b.dataset.edit));
   document.querySelectorAll('[data-activate]').forEach(b=>b.onclick=()=>setActiveListing(b.dataset.activate));
 }
 function statusIcon(s) { return ({live:'●',sold:'✓',draft:'◐',removed:'×','not-posted':'○'})[s] || '○'; }
 
 function blankListing() {
-  return { id:'', title:'', price:'', condition:'', category:'', location:'', description:'', tags:[], photos:[], markets:Object.fromEntries(Object.keys(MARKET_INFO).map(k=>[k,{status:'not-posted',url:'',title:'',description:'',price:'',category:'',location:''}])) };
+  return { id:'', title:'', price:'', condition:'', category:'', location:'', description:'', tags:[], photos:[], sale:emptySale(), markets:Object.fromEntries(Object.keys(MARKET_INFO).map(k=>[k,{status:'not-posted',url:'',title:'',description:'',price:'',category:'',location:''}])) };
 }
 function populateEditor() {
   $('#listingId').value=current.id || '';
@@ -71,7 +92,7 @@ function populateEditor() {
   $('#tags').value=(current.tags||[]).join(', ');
   $('#deleteBtn').hidden=!current.id;
   updateActivateButton();
-  renderPhotos(); renderMarkets();
+  renderSale(); renderPhotos(); renderMarkets();
   $('#editor').classList.remove('hidden'); $('#title').focus();
 }
 function newListing() { current=blankListing(); populateEditor(); }
@@ -81,7 +102,7 @@ function collectMaster() {
   return {
     title:$('#title').value, price:$('#price').value, condition:$('#condition').value,
     category:$('#category').value, location:$('#location').value, description:$('#description').value,
-    tags:$('#tags').value.split(',').map(s=>s.trim()).filter(Boolean), markets: current.markets
+    tags:$('#tags').value.split(',').map(s=>s.trim()).filter(Boolean), sale:normalizeSale(current.sale), markets: current.markets
   };
 }
 async function saveMaster(ev) {
@@ -89,7 +110,7 @@ async function saveMaster(ev) {
   const body=collectMaster();
   current = current.id ? await api('/api/listings/'+current.id,{method:'PUT',body:JSON.stringify(body)}) : await api('/api/listings',{method:'POST',body:JSON.stringify(body)});
   $('#listingId').value=current.id; $('#deleteBtn').hidden=false; $('#saveMessage').textContent='Saved.';
-  setTimeout(()=>$('#saveMessage').textContent='',1500); await refresh(); renderMarkets(); renderPhotos();
+  setTimeout(()=>$('#saveMessage').textContent='',1500); await refresh(); renderSale(); renderMarkets(); renderPhotos();
   return current;
 }
 async function setActiveListing(id) {
@@ -107,6 +128,70 @@ function updateActivateButton() {
   if (!b) return;
   if (!current?.id) { b.textContent='Save & use in Greasemonkey'; return; }
   b.textContent=current.id === activeListingId ? 'Using in Greasemonkey' : 'Use in Greasemonkey';
+}
+
+function renderSale() {
+  const sale=normalizeSale(current?.sale);
+  const isSold=Boolean(sale.soldAt);
+  $('#soldAt').value=sale.soldAt || todayLocal();
+  $('#soldPlatform').value=sale.platform || '';
+  $('#buyerName').value=sale.buyerName || '';
+  $('#buyerEmail').value=sale.buyerEmail || '';
+  $('#markSoldBtn').textContent=isSold ? 'Save sale details' : 'Mark as sold';
+  $('#clearSaleBtn').hidden=!isSold;
+  $('#soldShortcutBtn').textContent=isSold ? 'Sale details' : 'Mark as sold';
+  $('#saleSummary').innerHTML=isSold
+    ? `<strong>Sold ${esc(sale.soldAt)}</strong> on ${esc(salePlatformName(sale.platform))} to <strong>${esc(sale.buyerName)}</strong>${sale.buyerEmail ? ` &lt;${esc(sale.buyerEmail)}&gt;` : ''}.`
+    : 'This item has not been marked as sold.';
+}
+
+async function saveSale(ev) {
+  ev?.preventDefault();
+  const form=$('#saleForm');
+  if (!form.reportValidity()) return;
+
+  const oldSale=normalizeSale(current.sale);
+  const platform=$('#soldPlatform').value;
+  const soldAt=$('#soldAt').value;
+  const buyerName=$('#buyerName').value.trim();
+  const buyerEmail=$('#buyerEmail').value.trim();
+
+  if (oldSale.soldAt && oldSale.platform && oldSale.platform !== platform && MARKET_INFO[oldSale.platform]) {
+    const oldMarket=current.markets[oldSale.platform];
+    if (oldMarket?.status === 'sold') oldMarket.status=oldSale.previousPlatformStatus || 'live';
+  }
+
+  let previousPlatformStatus='';
+  if (MARKET_INFO[platform]) {
+    const market=current.markets[platform];
+    previousPlatformStatus=(oldSale.soldAt && oldSale.platform === platform)
+      ? oldSale.previousPlatformStatus
+      : (market.status || 'not-posted');
+    market.status='sold';
+  }
+
+  current.sale={ soldAt, platform, buyerName, buyerEmail, previousPlatformStatus };
+  await saveMaster();
+  toast('Sale details saved');
+}
+
+async function clearSale() {
+  const sale=normalizeSale(current.sale);
+  if (!sale.soldAt) return;
+  if (!confirm(`Clear the sale record for “${current.title}”?`)) return;
+
+  if (MARKET_INFO[sale.platform]) {
+    const market=current.markets[sale.platform];
+    if (market?.status === 'sold') market.status=sale.previousPlatformStatus || 'live';
+  }
+  current.sale=emptySale();
+  await saveMaster();
+  toast('Sale record cleared');
+}
+
+function showSaleSection() {
+  $('#saleFieldset').scrollIntoView({ block:'start' });
+  $('#soldPlatform').focus();
 }
 
 function renderPhotos() {
@@ -185,6 +270,9 @@ $('#filter').oninput=renderRows;
 $('#listingForm').onsubmit=saveMaster;
 $('#activateBtn').onclick=()=>setActiveListing(current?.id).catch(err=>toast(err.message));
 $('#photoInput').onchange=e=>{ addPhotos([...e.target.files]).catch(err=>toast(err.message)); e.target.value=''; };
+$('#saleForm').onsubmit=ev=>saveSale(ev).catch(err=>toast(err.message));
+$('#clearSaleBtn').onclick=()=>clearSale().catch(err=>toast(err.message));
+$('#soldShortcutBtn').onclick=showSaleSection;
 $('#deleteBtn').onclick=async()=>{
   if (!current.id || !confirm(`Delete “${current.title}” from this local assistant? This does not delete marketplace posts.`)) return;
   await api('/api/listings/'+current.id,{method:'DELETE'}); current=null; $('#editor').classList.add('hidden'); await refresh();

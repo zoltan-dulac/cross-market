@@ -12,7 +12,7 @@ const DATA_DIR = path.join(ROOT, 'data');
 const PHOTOS_DIR = path.join(DATA_DIR, 'photos');
 const DB_FILE = path.join(DATA_DIR, 'listings.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
-const VERSION = '0.3.0';
+const VERSION = '0.3.1';
 
 fs.mkdirSync(PHOTOS_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, '[]\n');
@@ -78,6 +78,17 @@ function sanitizeListing(input, old = {}) {
       location: input.markets?.[key]?.location ?? old.markets?.[key]?.location ?? ''
     };
   }
+  const sourceSale = input.sale ?? old.sale ?? {};
+  const salePlatform = String(sourceSale.platform || '').trim();
+  const soldAt = String(sourceSale.soldAt || '').trim();
+  const sale = {
+    soldAt: /^\d{4}-\d{2}-\d{2}$/.test(soldAt) ? soldAt : '',
+    platform: [...MARKET_KEYS, 'other'].includes(salePlatform) ? salePlatform : '',
+    buyerName: String(sourceSale.buyerName || '').trim(),
+    buyerEmail: String(sourceSale.buyerEmail || '').trim(),
+    previousPlatformStatus: ['not-posted','draft','live','sold','removed'].includes(sourceSale.previousPlatformStatus)
+      ? sourceSale.previousPlatformStatus : ''
+  };
   return {
     id: old.id || crypto.randomUUID(),
     title: String(input.title ?? old.title ?? '').trim(),
@@ -88,6 +99,7 @@ function sanitizeListing(input, old = {}) {
     description: String(input.description ?? old.description ?? '').trim(),
     tags: Array.isArray(input.tags) ? input.tags.map(String).map(s => s.trim()).filter(Boolean).slice(0, 10) : (old.tags || []),
     photos: Array.isArray(old.photos) ? old.photos : [],
+    sale,
     markets,
     createdAt: old.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()

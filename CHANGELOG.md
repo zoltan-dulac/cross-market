@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-08-16
+
+- Added a listing-level **Mark as sold** workflow.
+- Sale records store the sold date, platform, buyer name, and optional buyer email address.
+- Marking a listing sold changes the selected marketplace status to **Sold** while leaving other marketplace statuses unchanged, making remaining live ads easy to find and remove.
+- Added a Sale column to the main dashboard and a prominent sale-details shortcut in the listing editor.
+- Sale records can be edited or cleared; clearing restores the marketplace status that existed before the sale was recorded when possible.
+
 ## 0.3.0 - 2026-08-15
 
 - Added Google Photos support to the Firefox/Greasemonkey companion.

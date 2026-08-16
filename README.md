@@ -13,6 +13,8 @@ CrossMarket deliberately does **not** log into marketplaces, scrape account data
 - Local photo storage
 - Per-marketplace title, price, category, location, and description overrides
 - Status tracking: Not posted, Draft, Live, Sold, Removed
+- Listing-level sale records with sold date, marketplace, buyer name, and optional buyer email
+- Marking a listing sold automatically marks the selected marketplace as Sold while leaving other marketplace statuses unchanged
 - Opening a marketplace posting page automatically marks that listing as Live on that marketplace
 - Store the published URL for each marketplace
 - Dashboard showing listing status across all four marketplaces
@@ -81,6 +83,7 @@ The userscript runs on the supported marketplace pages and on `photos.google.com
 6. On Kijiji, Facebook Marketplace, and Karrot, press **Fill visible fields** to populate recognized title, price, description, and location fields.
 7. Complete category, condition, photos, and marketplace-specific controls manually.
 8. Review everything and use the marketplace's own Post/Publish control yourself.
+9. When the item sells, use the listing's **Sale** section to record the date, platform, buyer, and optional email address.
 
 Craigslist is intentionally copy-only in the userscript.
 
