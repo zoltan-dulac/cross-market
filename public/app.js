@@ -219,13 +219,37 @@ function renderMarkets() {
     if (key==='karrot') actions.insertAdjacentHTML('beforeend','<button type="button" data-karrot-import>Copy source URL for Karrot import</button>');
     const note=document.createElement('p'); note.className='help'; note.textContent=info.note; actions.after(note);
     for (const f of ['status','url','title','price','category','location','description']) card.querySelector('.m-'+f).value=m[f] || '';
+    updateSavedUrlLink(card, m.url);
     card.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copy(marketValue(key,b.dataset.copy),`${info.name}: ${b.dataset.copy} copied`));
     card.querySelector('[data-open-market]').onclick=()=>markMarketplaceLive(key,card);
+    card.querySelector('.save-url').onclick=()=>saveMarketUrl(key,card);
     card.querySelector('.save-market').onclick=()=>saveMarket(key,card);
     const ki=card.querySelector('[data-karrot-import]'); if (ki) ki.onclick=()=>copyKarrotSource();
     host.appendChild(node);
   }
 }
+
+function updateSavedUrlLink(card, url) {
+  const link=card.querySelector('.open-saved-url');
+  const value=String(url || '').trim();
+  link.hidden=!value;
+  if (value) link.href=value;
+  else link.removeAttribute('href');
+}
+
+async function saveMarketUrl(key, card) {
+  if (!current.id) await saveMaster();
+  const url=card.querySelector('.m-url').value.trim();
+  const resolved=await api(`/api/companion/listings/${current.id}/market-url`, {
+    method:'PUT', body:JSON.stringify({ market:key, url })
+  });
+  current=await api('/api/listings/'+current.id);
+  updateSavedUrlLink(card, resolved.url);
+  await refresh();
+  renderMarkets();
+  toast(url ? `${MARKET_INFO[key].name} ad URL saved` : `${MARKET_INFO[key].name} ad URL cleared`);
+}
+
 async function markMarketplaceLive(key, card) {
   const m=current.markets[key];
   const previousStatus=m.status;
@@ -244,7 +268,12 @@ async function markMarketplaceLive(key, card) {
       await refresh();
       renderMarkets();
     }
-    toast(`${MARKET_INFO[key].name} marked Live`);
+    try {
+      await api('/api/companion/capture',{method:'PUT',body:JSON.stringify({id:current.id,market:key})});
+      toast(`${MARKET_INFO[key].name} marked Live; waiting to capture its ad URL`);
+    } catch (captureError) {
+      toast(`${MARKET_INFO[key].name} marked Live, but automatic URL capture could not be armed`);
+    }
   } catch (err) {
     m.status=previousStatus;
     card.querySelector('.m-status').value=previousStatus;
@@ -277,5 +306,18 @@ $('#deleteBtn').onclick=async()=>{
   if (!current.id || !confirm(`Delete “${current.title}” from this local assistant? This does not delete marketplace posts.`)) return;
   await api('/api/listings/'+current.id,{method:'DELETE'}); current=null; $('#editor').classList.add('hidden'); await refresh();
 };
+
+async function syncCapturedUrls() {
+  await refresh();
+  if (!current?.id) return;
+  const fresh=await api('/api/listings/'+current.id);
+  for (const key of Object.keys(MARKET_INFO)) {
+    if (!current.markets?.[key] || !fresh.markets?.[key]) continue;
+    current.markets[key].url=fresh.markets[key].url || '';
+    current.markets[key].status=fresh.markets[key].status || current.markets[key].status;
+  }
+  renderMarkets();
+}
+window.addEventListener('focus',()=>syncCapturedUrls().catch(()=>{}));
 
 refresh().catch(err=>toast(err.message));

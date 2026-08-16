@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name        CrossMarket Companion
 // @namespace   https://github.com/zoltan-dulac/cross-market
-// @version     0.3.0
-// @description User-triggered CrossMarket tools for marketplace forms and importing the current Google Photos image into a local listing.
+// @version     0.3.2
+// @description User-triggered CrossMarket tools for marketplace forms, automatic published-ad URL capture, and importing the current Google Photos image into a local listing.
 // @match       https://www.kijiji.ca/*
 // @match       https://kijiji.ca/*
 // @match       https://www.facebook.com/marketplace/*
@@ -38,6 +38,8 @@
   let panel = null;
   let trigger = null;
   let status = null;
+  let captureInFlight = false;
+  let lastObservedHref = location.href;
 
   const FIELD_RULES = {
     title: {
@@ -199,6 +201,19 @@
       main.append(fill);
     }
 
+    if (market !== 'googlephotos') {
+      const saveUrl = document.createElement('button');
+      saveUrl.type = 'button';
+      saveUrl.className = 'mc-save-ad-url';
+      saveUrl.textContent = 'Save current ad URL';
+      saveUrl.addEventListener('click', () => saveCurrentAdUrl(true));
+      main.append(saveUrl);
+      const urlNote = document.createElement('p');
+      urlNote.className = 'mc-small';
+      urlNote.textContent = 'If you started here with CrossMarket’s Open button, the companion also tries to save the URL automatically after the marketplace opens the newly published ad.';
+      main.append(urlNote);
+    }
+
     if (typeof GM.registerMenuCommand === 'function') {
       GM.registerMenuCommand('Open CrossMarket panel', openPanel);
       if (market === 'googlephotos') GM.registerMenuCommand('Add current photo to CrossMarket', () => openPanel().then(addCurrentGooglePhoto));
@@ -241,6 +256,7 @@
       select.value = preferred;
       selectListing(preferred, false);
       setStatus(`Connected to CrossMarket ${indexData.version}.`);
+      if (market !== 'googlephotos') setTimeout(maybeAutoCapturePublishedUrl, 250);
     } catch (error) {
       selected = null;
       renderSelected();
@@ -300,6 +316,126 @@
   }
 
   function setStatus(message) { if (status) status.textContent = message; }
+
+  function normalizedPageUrl(raw = location.href) {
+    try {
+      const u = new URL(raw, location.href);
+      u.hash = '';
+      return u;
+    } catch { return null; }
+  }
+
+  function marketUrlCandidates() {
+    const raw = [
+      location.href,
+      document.querySelector('link[rel="canonical"]')?.href,
+      document.querySelector('meta[property="og:url"]')?.content
+    ];
+    const seen = new Set();
+    return raw.map(normalizedPageUrl).filter(u => {
+      if (!u) return false;
+      const h = u.hostname.toLowerCase();
+      const allowed =
+        (market === 'kijiji' && (h === 'kijiji.ca' || h.endsWith('.kijiji.ca'))) ||
+        (market === 'facebook' && (h === 'facebook.com' || h.endsWith('.facebook.com'))) ||
+        (market === 'karrot' && (h === 'karrotmarket.com' || h.endsWith('.karrotmarket.com'))) ||
+        (market === 'craigslist' && (h === 'craigslist.org' || h.endsWith('.craigslist.org')));
+      const key = u.toString();
+      if (!allowed || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function currentCanonicalUrl() {
+    return marketUrlCandidates()[0] || normalizedPageUrl(location.href);
+  }
+
+  function detectedPublishedAdUrl() {
+    if (market === 'googlephotos') return '';
+    for (const u of marketUrlCandidates()) {
+      const path = u.pathname.replace(/\/+$/, '');
+      let recognized = false;
+
+      if (market === 'facebook') recognized = /^\/marketplace\/item\/\d+$/i.test(path);
+      if (market === 'craigslist') recognized = /\/\d{8,}\.html$/i.test(path);
+      if (market === 'karrot') recognized = /^\/(?:ca\/)?buy-sell\/(?!all$)[a-z0-9_-]+$/i.test(path);
+      if (market === 'kijiji') recognized = /\/v-[^/]+\//i.test(path) && /\/\d{7,}$/i.test(path);
+
+      if (recognized) {
+        u.search = '';
+        u.hash = '';
+        return u.toString();
+      }
+    }
+    return '';
+  }
+
+  async function persistAdUrl(listingId, url, automatic = false) {
+    const resolved = await postJSON(`${BASE}/api/companion/listings/${listingId}/market-url`, 'PUT', { market, url });
+    if (selected?.id === listingId && selected.resolved) selected.resolved = { ...selected.resolved, ...resolved };
+    if (indexData) {
+      indexData.pendingUrlCaptureId = '';
+      const item = indexData.listings.find(x => x.id === listingId);
+      if (item?.resolved) item.resolved = { ...item.resolved, ...resolved };
+    }
+    renderSelected();
+    setStatus(`${automatic ? 'Automatically saved' : 'Saved'} this ${MARKET_NAMES[market]} ad URL to “${resolved.title}”.`);
+    if (automatic && trigger) {
+      const old = trigger.textContent;
+      trigger.textContent = 'CrossMarket ✓ URL saved';
+      setTimeout(() => { if (trigger) trigger.textContent = old; }, 3500);
+    }
+    return resolved;
+  }
+
+  async function saveCurrentAdUrl(allowUnrecognized = false) {
+    if (market === 'googlephotos') return;
+    if (!selected?.resolved) return setStatus('Choose a CrossMarket listing first.');
+    let url = detectedPublishedAdUrl();
+    if (!url && allowUnrecognized) {
+      const candidate = currentCanonicalUrl();
+      if (!candidate) return setStatus('I could not determine the current page URL.');
+      const ok = confirm(`CrossMarket cannot confidently recognize this as a published ${MARKET_NAMES[market]} ad. Save this page URL anyway?\n\n${candidate.toString()}`);
+      if (!ok) return;
+      candidate.hash = '';
+      url = candidate.toString();
+    }
+    if (!url) return setStatus('Open the published ad page first, then try Save current ad URL again.');
+    try { await persistAdUrl(selected.id, url, false); }
+    catch (error) { setStatus(error.message || 'Could not save the ad URL.'); }
+  }
+
+  async function maybeAutoCapturePublishedUrl() {
+    if (captureInFlight || market === 'googlephotos') return;
+    const url = detectedPublishedAdUrl();
+    if (!url) return;
+    captureInFlight = true;
+    try {
+      // Refresh here because CrossMarket may have armed capture just after this
+      // marketplace tab first loaded.
+      const fresh = await requestJSON(`${BASE}/api/companion?market=${encodeURIComponent(market)}`);
+      const selectedId = selected?.id;
+      indexData = fresh;
+      if (selectedId) selected = fresh.listings.find(x => x.id === selectedId) || selected;
+      const pending = fresh.listings.find(x => x.id === fresh.pendingUrlCaptureId);
+      if (!pending) return;
+      await persistAdUrl(pending.id, url, true);
+    } catch (error) {
+      setStatus(`Found what looks like a published ad, but could not save its URL: ${error.message}`);
+    } finally {
+      captureInFlight = false;
+    }
+  }
+
+  function startUrlWatcher() {
+    if (market === 'googlephotos') return;
+    setInterval(() => {
+      if (location.href === lastObservedHref) return;
+      lastObservedHref = location.href;
+      setTimeout(maybeAutoCapturePublishedUrl, 500);
+    }, 750);
+  }
 
   function visibleRect(el) {
     const r = el?.getBoundingClientRect?.();
@@ -540,4 +676,6 @@
   }
 
   buildUI();
+  startUrlWatcher();
+  if (market !== 'googlephotos') setTimeout(loadListings, 300);
 })();

@@ -16,7 +16,8 @@ CrossMarket deliberately does **not** log into marketplaces, scrape account data
 - Listing-level sale records with sold date, marketplace, buyer name, and optional buyer email
 - Marking a listing sold automatically marks the selected marketplace as Sold while leaving other marketplace statuses unchanged
 - Opening a marketplace posting page automatically marks that listing as Live on that marketplace
-- Store the published URL for each marketplace
+- Store an optional published ad URL for each marketplace, with prominent Save/Open controls
+- Automatically capture a newly published ad URL when a posting session was started with CrossMarket’s Open button and the companion recognizes the resulting listing page
 - Dashboard showing listing status across all four marketplaces
 - Firefox/Greasemonkey companion
 - Import the currently displayed photo from Google Photos into the active local listing
@@ -83,7 +84,8 @@ The userscript runs on the supported marketplace pages and on `photos.google.com
 6. On Kijiji, Facebook Marketplace, and Karrot, press **Fill visible fields** to populate recognized title, price, description, and location fields.
 7. Complete category, condition, photos, and marketplace-specific controls manually.
 8. Review everything and use the marketplace's own Post/Publish control yourself.
-9. When the item sells, use the listing's **Sale** section to record the date, platform, buyer, and optional email address.
+9. If the marketplace opens the newly published ad in the same posting flow, the companion tries to save that ad URL back to the correct CrossMarket listing automatically. You can also press **Save current ad URL** in the companion as a fallback.
+10. When the item sells, use the listing's **Sale** section to record the date, platform, buyer, and optional email address.
 
 Craigslist is intentionally copy-only in the userscript.
 
@@ -108,13 +110,20 @@ The companion:
 - never reads your marketplace account or existing listing data;
 - never clicks Post, Publish, Submit, or Next;
 - never solves CAPTCHAs or bypasses verification;
-- never runs unattended;
+- never publishes listings unattended;
+- may automatically record the URL of a published ad only after you explicitly started that marketplace posting session with CrossMarket’s Open button;
 - does not manipulate marketplace file-upload controls;
 - reads a Google Photos image only after you explicitly press **Add current photo to listing**;
 - fills fields only after you explicitly press **Fill visible fields**;
 - leaves existing field text unchanged unless you explicitly enable replacement.
 
 Marketplace markup changes frequently. CrossMarket uses labels, ARIA labels, placeholders, names, and other semantic hints rather than depending only on generated CSS class names. If it cannot identify a field with enough confidence, it leaves the field untouched.
+
+### Ad URL capture
+
+Each marketplace card has a visible optional **Ad URL** field. You can paste a URL there manually at any time. When you press a marketplace’s **Open** button, CrossMarket also records that the current listing is waiting for an ad URL from that marketplace. The Greasemonkey companion watches for a recognized published-ad URL during that posting session and, if it finds one, stores it locally and clears the pending capture. Pending automatic capture expires after four hours; the manual **Save current ad URL** action remains available afterward.
+
+The current recognition rules cover Facebook Marketplace item URLs, Craigslist posting URLs, Karrot `/buy-sell/` item URLs, and the established Kijiji `/v-.../` ad URL form. Marketplace URL structures can change, so the companion also provides **Save current ad URL** as a manual fallback. It never presses the marketplace’s final publishing controls.
 
 ## Local data and privacy
 

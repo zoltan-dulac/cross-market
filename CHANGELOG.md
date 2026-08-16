@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.2 - 2026-08-16
+
+- Promoted each marketplace’s optional **Ad URL** field into the main marketplace card, with dedicated **Save URL** and **Open saved ad** controls.
+- Starting a post with a marketplace **Open** button now arms URL capture for that listing and marketplace.
+- The Greasemonkey companion automatically saves the resulting published-ad URL when it recognizes the new listing page.
+- Added **Save current ad URL** to the Greasemonkey panel as a manual fallback when a marketplace changes its URL pattern.
+- Added server-side marketplace-host validation before companion-captured URLs are stored.
+
 ## 0.3.1 - 2026-08-16
 
 - Added a listing-level **Mark as sold** workflow.

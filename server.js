@@ -12,11 +12,11 @@ const DATA_DIR = path.join(ROOT, 'data');
 const PHOTOS_DIR = path.join(DATA_DIR, 'photos');
 const DB_FILE = path.join(DATA_DIR, 'listings.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 
 fs.mkdirSync(PHOTOS_DIR, { recursive: true });
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, '[]\n');
-if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ activeListingId: '' }, null, 2) + '\n');
+if (!fs.existsSync(SETTINGS_FILE)) fs.writeFileSync(SETTINGS_FILE, JSON.stringify({ activeListingId: '', pendingUrlCapture: {} }, null, 2) + '\n');
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -37,8 +37,44 @@ function writeJSON(file, data) {
 }
 function readDB() { return readJSON(DB_FILE, []); }
 function writeDB(data) { writeJSON(DB_FILE, data); }
-function readSettings() { return readJSON(SETTINGS_FILE, { activeListingId: '' }); }
+function readSettings() {
+  const raw = readJSON(SETTINGS_FILE, { activeListingId: '', pendingUrlCapture: {} });
+  return {
+    ...raw,
+    activeListingId: String(raw.activeListingId || ''),
+    pendingUrlCapture: raw.pendingUrlCapture && typeof raw.pendingUrlCapture === 'object' ? raw.pendingUrlCapture : {}
+  };
+}
 function writeSettings(data) { writeJSON(SETTINGS_FILE, data); }
+
+function pendingCaptureId(settings, market) {
+  const pending = settings.pendingUrlCapture?.[market];
+  if (typeof pending === 'string') return pending; // Compatibility with early development builds.
+  if (!pending || typeof pending !== 'object') return '';
+  const id = String(pending.id || '');
+  const armedAt = Date.parse(pending.armedAt || '');
+  if (!id || !Number.isFinite(armedAt)) return '';
+  return Date.now() - armedAt <= 4 * 60 * 60 * 1000 ? id : '';
+}
+
+function validateMarketUrl(market, rawUrl) {
+  const value = String(rawUrl || '').trim();
+  if (!value) return '';
+  let parsed;
+  try { parsed = new URL(value); }
+  catch { throw new Error('Ad URL must be a valid URL'); }
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Ad URL must use http or https');
+  const host = parsed.hostname.toLowerCase();
+  const ok = {
+    kijiji: host === 'kijiji.ca' || host.endsWith('.kijiji.ca'),
+    facebook: host === 'facebook.com' || host.endsWith('.facebook.com'),
+    karrot: host === 'karrotmarket.com' || host.endsWith('.karrotmarket.com'),
+    craigslist: host === 'craigslist.org' || host.endsWith('.craigslist.org')
+  }[market];
+  if (!ok) throw new Error(`That URL does not appear to belong to ${market}`);
+  parsed.hash = '';
+  return parsed.toString();
+}
 function json(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -148,6 +184,7 @@ function companionPayload(market) {
   return {
     version: VERSION,
     activeListingId: settings.activeListingId || '',
+    pendingUrlCaptureId: validMarket && validMarket !== 'googlephotos' ? pendingCaptureId(settings, validMarket) : '',
     listings: db.map(x => ({
       id: x.id,
       title: x.title,
@@ -194,12 +231,47 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, settings);
     }
 
+    if (pathname === '/api/companion/capture' && req.method === 'PUT') {
+      const body = await bodyJSON(req);
+      const id = String(body.id || '');
+      const market = String(body.market || '');
+      if (!MARKET_KEYS.includes(market)) return json(res, 400, { error: 'A valid market is required' });
+      if (!id || !readDB().some(x => x.id === id)) return json(res, 404, { error: 'Listing not found' });
+      const settings = readSettings();
+      settings.pendingUrlCapture[market] = { id, armedAt: new Date().toISOString() };
+      writeSettings(settings);
+      return json(res, 200, { ok: true, id, market });
+    }
+
     const cm = pathname.match(/^\/api\/companion\/listings\/([a-f0-9-]+)$/i);
     if (cm && req.method === 'GET') {
       const market = u.searchParams.get('market');
       if (!MARKET_KEYS.includes(market)) return json(res, 400, { error: 'A valid market query parameter is required' });
       const listing = readDB().find(x => x.id === cm[1]);
       return listing ? json(res, 200, resolveForMarket(listing, market)) : json(res, 404, { error: 'Listing not found' });
+    }
+
+    const cmUrl = pathname.match(/^\/api\/companion\/listings\/([a-f0-9-]+)\/market-url$/i);
+    if (cmUrl && req.method === 'PUT') {
+      const body = await bodyJSON(req);
+      const market = String(body.market || '');
+      if (!MARKET_KEYS.includes(market)) return json(res, 400, { error: 'A valid market is required' });
+      const db = readDB();
+      const i = db.findIndex(x => x.id === cmUrl[1]);
+      if (i < 0) return json(res, 404, { error: 'Listing not found' });
+      let url;
+      try { url = validateMarketUrl(market, body.url); }
+      catch (error) { return json(res, 400, { error: error.message }); }
+      db[i].markets[market].url = url;
+      if (url && !['sold', 'removed'].includes(db[i].markets[market].status)) db[i].markets[market].status = 'live';
+      db[i].updatedAt = new Date().toISOString();
+      writeDB(db);
+      const settings = readSettings();
+      if (pendingCaptureId(settings, market) === db[i].id) {
+        delete settings.pendingUrlCapture[market];
+        writeSettings(settings);
+      }
+      return json(res, 200, resolveForMarket(db[i], market));
     }
 
     const m = pathname.match(/^\/api\/listings\/([a-f0-9-]+)$/i);

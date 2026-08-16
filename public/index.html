@@ -125,6 +125,16 @@
   <article class="market-card">
     <div class="market-head"><h4></h4><span class="badge"></span></div>
     <div class="button-row actions"></div>
+    <div class="ad-url-box">
+      <label>Ad URL <span class="optional">(optional)</span>
+        <input class="m-url" type="url" placeholder="Paste the published ad URL">
+      </label>
+      <div class="button-row ad-url-actions">
+        <button class="save-url" type="button">Save URL</button>
+        <a class="button open-saved-url" target="_blank" rel="noopener" hidden>Open saved ad</a>
+      </div>
+      <p class="help ad-url-help">If you start posting with the Open button, the Greasemonkey companion will try to capture the published ad URL automatically.</p>
+    </div>
     <details>
       <summary>Overrides and status</summary>
       <div class="grid two market-fields">
@@ -133,7 +143,6 @@
             <option value="not-posted">Not posted</option><option value="draft">Draft</option><option value="live">Live</option><option value="sold">Sold</option><option value="removed">Removed</option>
           </select>
         </label>
-        <label>Listing URL <input class="m-url" type="url" placeholder="Paste the published listing URL"></label>
         <label>Title override <input class="m-title" placeholder="Leave blank to use master title"></label>
         <label>Price override <input class="m-price" placeholder="Leave blank to use master price"></label>
         <label>Category override <input class="m-category" placeholder="Marketplace-specific category"></label>

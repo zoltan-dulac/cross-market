@@ -37,6 +37,9 @@ th,td { text-align:left; padding:.6rem; border-bottom:1px solid var(--border); v
 .markets { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:1rem; }
 .market-card { border:1px solid var(--border); border-radius:.5rem; padding:1rem; }
 .market-card details { margin-top:.8rem; }
+.ad-url-box { margin-top:.9rem; padding:.75rem; border:1px solid var(--border); border-radius:.45rem; }
+.ad-url-actions { justify-content:flex-start; margin-top:.55rem; }
+.ad-url-help { margin:.55rem 0 0; font-size:.9rem; }
 .market-card summary, .companion-panel summary { cursor:pointer; font-weight:700; }
 .market-fields { margin-top:.8rem; }
 .photos { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:.8rem; }
